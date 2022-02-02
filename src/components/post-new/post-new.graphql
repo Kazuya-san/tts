@@ -1,0 +1,56 @@
+query PostNew__previousPostsCount($user_id: bigint!) {
+  posts_aggregate(where: { posted_by: { _eq: $user_id } }) {
+    aggregate {
+      count
+    }
+  }
+}
+
+mutation PostNew__insertPost(
+  $sub_category_id: bigint!
+  $title: String!
+  $detail: String!
+  $post_attachments: [post_attachments_insert_input!]!
+  $post_prices: [post_prices_insert_input!]!
+  $years_of_experience: smallint
+) {
+  insert_posts(
+    objects: {
+      sub_category_id: $sub_category_id
+      title: $title
+      detail: $detail
+      post_attachments: { data: $post_attachments }
+      post_prices: { data: $post_prices }
+      years_of_experience: $years_of_experience
+    }
+  ) {
+    returning {
+      id
+    }
+  }
+}
+
+mutation PostNew__insertPostAttributes(
+  $post_id: bigint!
+  $possible_value: jsonb!
+) {
+  insert_post_attributes(
+    objects: { post_id: $post_id, possible_value: $possible_value }
+  ) {
+    returning {
+      post_id
+    }
+  }
+}
+
+mutation PostNew__GetStripeCustomerPortalLink(
+  $post_id: bigint!
+  $updated_post_is_local: Boolean!
+) {
+  checkout_or_manage_post_payment(
+    post_id: $post_id
+    updated_post_is_local: $updated_post_is_local
+  ) {
+    url
+  }
+}

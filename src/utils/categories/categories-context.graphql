@@ -1,0 +1,11 @@
+query CategoriesContext__GetMe {
+  categories {
+    name
+    id
+    sub_categories {
+      name
+      id
+      category_id
+    }
+  }
+}

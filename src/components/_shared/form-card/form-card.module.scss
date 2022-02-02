@@ -1,0 +1,46 @@
+@import '../../../styles/theme';
+
+.formCard {
+  display: grid;
+
+  gap: 16px;
+
+  padding: 24px 8px;
+
+  border-radius: 16px;
+
+  text-align: center;
+  cursor: pointer;
+
+  background-color: var(--color-background-paper);
+  box-shadow: $shade-md;
+
+  > * {
+    margin: auto;
+  }
+
+  @media (max-width: 396px) {
+    grid-auto-flow: column;
+    grid-template-columns: max-content auto;
+
+    padding: 16px;
+
+    text-align: left !important;
+  }
+}
+
+.formCard__selected {
+  background-color: $color-primary;
+  color: #fff;
+}
+
+.formCard__icon {
+  @media (max-width: 396px) {
+    margin-right: 0;
+  }
+}
+.formCard__name {
+  @media (max-width: 396px) {
+    margin-left: 0;
+  }
+}
