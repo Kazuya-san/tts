@@ -11,6 +11,13 @@ import NextLink from 'next/link'
 import { useRouter } from 'next/router'
 import { useSnackbar } from 'notistack'
 import { useCallback, useEffect, useState } from 'react'
+import {
+  useSendMessageMutation,
+  useCreateRoomForUserMutation,
+  useGetRoomForUserQuery,
+} from '../../../generated/graphql'
+
+import { useUser } from '../../../utils/user/user-context'
 import ReactHtmlParser from 'react-html-parser'
 import chatIcon from '../../../assets/icons/_shared/post-card/chat.svg'
 import DollarIcon from '../../../assets/icons/_shared/post-card/dollar.svg'
@@ -19,8 +26,10 @@ import LocationIcon from '../../../assets/icons/_shared/post-card/location.svg'
 import PhoneCallIcon from '../../../assets/icons/_shared/post-card/phone-call.svg'
 import TrashIcon from '../../../assets/icons/_shared/post-card/trash.svg'
 import NationalImg from '../../../assets/images/post-card/national.png'
+import sendEmail from "../../../utils/email/sendEmail";
 import SponsorImg from '../../../assets/images/post-card/sponsor.png'
 import SubscribeImg from '../../../assets/images/post-card/subscribe.png'
+import Modal from '@material-ui/core/Modal';
 import type {
   Categories as CategoryType,
   Files as FileType,
@@ -34,6 +43,19 @@ import { BusinessSize } from '../../../utils/auth/types'
 import { useCity } from '../../../utils/city/city-context'
 import Link from '../link/link'
 import styles from './post-card.module.scss'
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 400,
+  bgcolor: 'background.paper',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+};
+
 
 const useStyles = makeStyles((theme) => ({
   input: {
@@ -105,14 +127,36 @@ const ChipStyle = styled(Chip)(({ theme }) => ({
 
 function PostCard(props: PostCardProps) {
   const classes = useStyles()
+  const [newMessage, setNewMessage] = useState('')
+  const [open, setOpen] = useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const [modalMsg, setModalMsg] = useState("Nothing to see here");
+  const [alt_Id, setalt_Id] = useState('')
+  const [roomCreated, setRoomCreated] = useState(false);
+  const [{}, sendMessage] = useSendMessageMutation()
+  const [{}, createRoom] = useCreateRoomForUserMutation()
+  const [disabled, setdisabled] = useState(false)
+  const [roomIDnew, setroomIDnew] = useState("");
+  const { user, auth } = useUser(true)
   const { mode, post, pageName } = props
   const postUser = post.user
+  //call get room for user
+  const [room, refetchRoomForUser] = useGetRoomForUserQuery({
+    variables: {
+      user_id: postUser.id,
+      my_id: user?.id,
+    },
+  })
+
+
 
   const router = useRouter()
   // const { user } = useUser()
   const { enqueueSnackbar } = useSnackbar()
 
   const [isDeleted, setIsDeleted] = useState(false)
+  
   const deletePost = usePostCard__DeletePostMutation()[1]
   const handleDelete = useCallback(() => {
     if (window.confirm('Are you sure you want to delete this post?')) {
@@ -152,8 +196,137 @@ function PostCard(props: PostCardProps) {
     return null
   }
 
+
+  const sendM = async () => {
+
+    if(room.fetching == false)
+    {
+       console.log(postUser.alt_id);
+    // console.log(room)
+    const res = room;
+    if(!auth.authUser && !auth.authUser.displayName) {
+     enqueueSnackbar('Please login to send message', {
+        variant: 'error',
+      })
+      return;
+    }
+    if(newMessage.length > 0){
+    let roomIn: any;
+    if((res.data?.rooms.length > 0 && res.data?.rooms[0].id) || roomCreated){
+      //setalt_Id(res.data?.rooms[0].alt_id)
+     //if(roomCreated) 
+
+      //setRoomCreated(false);
+      sendMessage({
+        content: newMessage,
+        user_id: user?.id,
+        room_id: roomCreated ? roomIDnew : res.data?.rooms[0].id,
+      }).then(res =>{
+        if(res.data)
+        {
+          // console.log(res);
+          //setModalMsg("Message Sent!")
+          //handleOpen();
+          const emailconfig =  {
+            to: postUser.email,
+            from: user.email,
+            subject: 'New Message',
+            text: `${user.full_name} sent you a message.`,
+            html: `<strong>${user.full_name}</strong> sent you a message.`,
+          }
+
+          sendEmail(emailconfig);
+           
+          enqueueSnackbar('Message Sent!', {
+            variant: 'success',
+          })
+    //alert("Msg Sent!")
+        }else{
+          //setModalMsg("Error Sending Message!")
+          enqueueSnackbar('Error Sending Message!', {
+            variant: 'error',
+          })
+          //handleOpen();
+        }
+      }
+      ).catch(err =>{
+        //alert("There was an Error"))
+        //setModalMsg("There was an Error")
+        //handleOpen();
+        enqueueSnackbar('There was an Error', {
+          variant: 'error',
+        })
+      })
+    }else{
+      console.log("creating room")
+      roomIn = await createRoom({
+        user_id: postUser.id,
+        my_id: user?.id,
+      })
+
+      setRoomCreated(true);
+
+      //console.log(roomIn);
+
+     // setalt_Id(roomIn?.data?.insert_rooms?.returning[0].alt_id)
+
+        sendMessage({
+          content: newMessage,
+          user_id: user?.id,
+          room_id: roomIn?.data?.insert_rooms?.returning[0].id,
+        }).then( res =>{
+          if(res.data)
+          {
+            setroomIDnew(roomIn?.data?.insert_rooms?.returning[0].id);
+            console.log(res);
+            const emailconfig =  {
+              to: postUser.email,
+              from: user.email,
+              subject: 'New Message',
+              text: `${user.full_name} sent you a message.`,
+              html: `<strong>${user.full_name}</strong> sent you a message.`,
+            }
+           
+            sendEmail(emailconfig);
+      enqueueSnackbar('Message Sent!', {
+        variant: 'success',
+      })
+      //reload the page
+      //router.replace(router.asPath)
+          }else{
+            //setModalMsg("Error Sending Message!")
+            //handleOpen();
+            enqueueSnackbar('Error Sending Message!', {
+              variant: 'error',
+            })
+          }
+        }
+        ).catch(err =>{
+          //setModalMsg("There was an Error")
+          //handleOpen();
+          enqueueSnackbar('There was an Error', {
+            variant: 'error',
+          })
+        })
+      // alert("Msg Sent!");
+    }
+
+  }else{
+    //alert("Message can't be empty!")
+    //setModalMsg("Message can't be empty!")
+    //handleOpen();
+    enqueueSnackbar('Message can\'t be empty!', {
+      variant: 'error',
+    })
+  }
+
+    setNewMessage("");
+    }
+  return;
+  }
+
   return (
-    <NextLink href={`/post/${post.title.toLowerCase()}/${post.alt_id}`}>
+    <div>
       <div
         className={`${styles.postCard} ${
           styles[`postCard__mode-${mode}`]
@@ -185,7 +358,7 @@ function PostCard(props: PostCardProps) {
                   height={90}
                 />
                 <div className={styles.postCard_badge_subscribed}>
-                  <span>SUBSCRIBE</span>
+                <span>SUBSCRIBE</span>
                 </div>
               </>
             ) : post.promotion_status === 3 ? (
@@ -206,6 +379,12 @@ function PostCard(props: PostCardProps) {
           </div>
         ) : null}
 
+              <Link
+                href={`/post/${post.title.toLowerCase()}/${post.alt_id}`}
+                variant="body2"
+                color="primary"
+                style={mode === 'MINI' ? {} : { fontWeight: 'bold' }}
+              >
         <div
           className={clsx(
             `${styles.postCard__bottomRow}`,
@@ -214,7 +393,7 @@ function PostCard(props: PostCardProps) {
           )}
         >
           {pageName === 'post-list' && (
-            <NextLink href={`/seller/${postUser.id}`} passHref>
+            <NextLink href={`/seller/${postUser.alt_id}`} passHref>
               <Image
                 className={styles.postCard__avatar}
                 alt={`${postUser.full_name}'s Avatar`}
@@ -306,12 +485,12 @@ function PostCard(props: PostCardProps) {
                       <div className={styles.postCard__chatmsg}>
                         <TextField
                           id="outlined-basic"
-                          label="Outlined"
+                          label="Please Type a Message"
                           variant="outlined"
                           fullWidth={true}
                           InputProps={{ className: classes.input }}
                         />
-                        <div className={styles.postCard__chatlink}>
+                        <div onClick={sendM} className={styles.postCard__chatlink}>
                           <Link href={`/message/${postUser.id}`}>
                             <Image alt="chatIcon" src={chatIcon} />
                           </Link>
@@ -433,9 +612,16 @@ function PostCard(props: PostCardProps) {
             </Box>
           </div>
         </div>
+        </Link>
         <Divider />
         <div className={styles.postCard__content}>
           <div className={styles.postCard__topRow}>
+          <Link
+                href={`/post/${post.title.toLowerCase()}/${post.alt_id}`}
+                variant="body2"
+                color="primary"
+                style={mode === 'MINI' ? {} : { fontWeight: 'bold' }}
+              >
             <Typography
               variant={mode === 'MINI' ? 'h4' : 'h4'}
               color="textPrimary"
@@ -453,6 +639,7 @@ function PostCard(props: PostCardProps) {
             >
               {post.title}
             </Typography>
+            </Link>
             {props.mode !== 'MINI' && props.post.detail ? (
               <Link
                 className={styles.postCard__contentDetail}
@@ -464,7 +651,7 @@ function PostCard(props: PostCardProps) {
               </Link>
             ) : null}
 
-            {/* {mode === 'OWNER' ? (
+             {mode === 'OWNER' ? (
               <>
                 <Link href={`/post/edit/${post.alt_id}`}>
                   <Image alt="Message" src={EditIcon} />
@@ -486,22 +673,28 @@ function PostCard(props: PostCardProps) {
                 ) : (
                   <span />
                 )}
+                
                 <div className={styles.postCard__chatmsg}>
                   <TextField
                     id="outlined-basic"
-                    label="Outlined"
+                    label="Please Type your message"
                     variant="outlined"
+                    value={newMessage}
                     fullWidth={true}
+                    disabled={disabled}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    
                     InputProps={{ className: classes.input }}
                   />
-                  <div className={styles.postCard__chatlink}>
-                    <Link href={`/message/${postUser.id}`}>
+                  <div onClick={sendM} className={styles.postCard__chatlink}>
+                  {/* ?msg=${newMessage} */}
+                    {/* <Link href={`/message/${postUser.id}`}> */}
                       <Image alt="chatIcon" src={chatIcon} />
-                    </Link>
+                    {/* </Link> */}
                   </div>
                 </div>
               </>
-            )} */}
+            )} 
           </div>
 
           {/* {props.mode !== 'MINI' && props.post.detail ? (
@@ -516,7 +709,20 @@ function PostCard(props: PostCardProps) {
           ) : null} */}
         </div>
       </div>
-    </NextLink>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            {modalMsg}
+          </Typography>
+        </Box>
+      </Modal>
+    </div>
+    
   )
 }
 

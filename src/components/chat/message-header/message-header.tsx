@@ -5,16 +5,16 @@ import React from 'react'
 import styles from './message-header.module.scss'
 import { useGetUserQuery } from '../../../generated/graphql'
 
-function ChatHeader(props: { online: Boolean; noRoom?: Boolean }) {
+function ChatHeader(props: { online: Boolean; noRoom?: Boolean; userID?: any }) {
   const router = useRouter()
   const { user_id } = router.query
 
   const [data] = useGetUserQuery({
     variables: {
-      user_id,
+      user_id: props.userID,
     },
   })
-
+  console.log(props.userID)
   return (
     <div className={`${styles['header']}`}>
       <div className={`${styles['header-grid-container']}`}>

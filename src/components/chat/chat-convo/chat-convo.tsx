@@ -32,11 +32,13 @@ function FileCard({ file }: any) {
   )
 }
 
+
 function ChatMain({
   roomId,
   setRoomId,
   isRoomPresent,
   setIsRoomPresent,
+  msg,
 }: {
   roomId: number
   isRoomPresent: boolean
@@ -56,6 +58,8 @@ function ChatMain({
     return response?.messages
   }
 
+  //console.log(roomId)
+
   const [data, executeSubscription] = useGetMessagesForRoomSubscription(
     {
       variables: {
@@ -70,6 +74,7 @@ function ChatMain({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId])
 
+
   return (
     <>
       <div className={`${styles['chat-convo-container']}`}>
@@ -81,6 +86,7 @@ function ChatMain({
             onIsRoomPresentChange={setIsRoomPresent}
             roomId={roomId}
             receiverId={user_id}
+            msg={msg}
           />
         </div>
 

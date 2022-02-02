@@ -10198,6 +10198,7 @@ export const GetRoomsListDocument = gql`
             url
           }
           id
+          alt_id
         }
         room {
           id
@@ -10219,6 +10220,10 @@ export function useGetRoomsListQuery(
     ...options,
   })
 }
+//searcy gqal with $user_id being string
+
+
+
 export const GetRoomForUserDocument = gql`
   query GetRoomForUser($my_id: bigint, $user_id: bigint) {
     rooms(
@@ -10265,6 +10270,13 @@ export const GetUserDocument = gql`
         url
       }
       full_name
+      business_size
+      business_name
+      posts(order_by: { created_at: desc }) {
+        id
+        title
+        created_at
+        }
     }
   }
 `

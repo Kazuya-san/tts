@@ -21,6 +21,7 @@ function ChatSideBar() {
     },
   })
 
+  //console.log(room)
   const [peerUser] = useGetUserQuery({
     variables: {
       user_id,
@@ -39,6 +40,8 @@ function ChatSideBar() {
 
   let finalChats: any
 
+  //console.log(data)
+
   if (!data.error && !data.fetching) {
     const chats = data.data?.rooms.map((item) => ({
       id: item.id,
@@ -46,6 +49,7 @@ function ChatSideBar() {
         fullName: item.user_rooms[0].user.full_name,
         avatar: item.user_rooms[0].user.avatar?.url,
         id: item.user_rooms[0].user.id,
+        alt_id: item.user_rooms[0].user.alt_id,
       },
       lastMessage: {
         content: item.user_rooms[0].room.messages[0]?.content,
@@ -69,6 +73,8 @@ function ChatSideBar() {
     // setChatRooms(filteredChats as chatRooms[])
     finalChats = filteredChats
   }
+
+  //console.log(finalChats)
 
   return (
     <>

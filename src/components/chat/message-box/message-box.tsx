@@ -26,12 +26,14 @@ const MessageBox = ({
   receiverId,
   roomId,
   isRoomPresent,
+  msg,
   onIsRoomPresentChange,
   onRoomCreate,
 }: MessageBoxType) => {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [fileUploading, setFileUploading] = useState(false)
-  const [newMessage, setNewMessage] = useState('')
+  //msg ? msg.length > 0 ? msg : "" : ""
+  const [newMessage, setNewMessage] = useState("")
   const [{}, sendMessage] = useSendMessageMutation()
   const [{}, createRoom] = useCreateRoomForUserMutation()
   const { user, auth } = useUser(true)

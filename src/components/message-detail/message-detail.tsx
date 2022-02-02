@@ -9,6 +9,8 @@ import {
   useGetRoomForUserQuery,
   useUserOnlineSubscription,
 } from '../../generated/graphql'
+import { gql } from 'graphql-request'
+import { hasuraServerRequest } from '../../../src/utils/hasura/hasura-server-request'
 import { useUser } from '../../utils/user/user-context'
 import ChatMain from '../chat/chat-convo/chat-convo'
 import ChatSideBar from '../chat/chat-sidebar/chat-sidebar'
@@ -19,12 +21,15 @@ import styles from './message-detail.module.scss'
 dayjs.extend(utc)
 const MessageDetail = () => {
   const router = useRouter()
+  const [userID, setUserID] = useState(null);
 
   const { user_id } = router.query
+  const nmsg = router.query.msg ? router.query.msg : "";
   const { user } = useUser(true)
 
   const [isRoomPresent, setIsRoomPresent] = useState(false)
   const [roomId, setRoomId] = useState<number>()
+  const [msg, setmsg] = useState<any>(nmsg)
 
   const [userIsOnline, setUserIsOnline] = useState(false)
   const [lastSeen, setLastSeen] = useState<any>()
@@ -49,7 +54,7 @@ const MessageDetail = () => {
       } else {
         setUserIsOnline(false)
       }
-    }, 5000)
+    }, 1 * 6000 * 60)
     return () => {
       clearInterval(interval)
     }
@@ -57,30 +62,109 @@ const MessageDetail = () => {
 
   const [room, refetchRoomForUser] = useGetRoomForUserQuery({
     variables: {
-      user_id,
+      user_id: userID,
       my_id: user?.id,
     },
   })
 
+  
+  
+
   useEffect(() => {
-    refetchRoomForUser()
+    const cal = async() => {
+      const { users } = await hasuraServerRequest<
+      {
+        users: SellerDetailProps['user'][]
+      },
+      { seller_id: string }
+    >(
+      gql`
+      query SellerDetail_StaticProps($seller_id: bpchar!) {
+        users: users(where: { alt_id: { _eq: $seller_id } }) {
+          id
+          email
+          public_contact_address
+          public_phone
+          avatar {
+            url
+          }
+          full_name
+          business_name
+          zip_code {
+            city {
+              name
+              state_code
+            }
+          }
+        }
+        post_prices(where: { post: { user: { alt_id: { _eq: $seller_id } } } }) {
+          id
+          price
+        }
+        posts(where: { user: { alt_id: { _eq: $seller_id } } }) {
+          id
+          alt_id
+          title
+          detail
+          promotion_status
+          user {
+            id
+            email
+            public_phone
+            avatar {
+              url
+            }
+            full_name
+            business_name
+          }
+          post_prices {
+            id
+            price
+          }
+          post_attribute {
+            possible_value
+          }
+      
+          sub_category {
+            id
+            name
+            category {
+              id
+              name
+            }
+          }
+        }
+      }    
+       
+      `,
+      { seller_id: user_id }
+    )
+  
+    setUserID(users?.[0]?.id);
+    console.log(user_id)
+      }
+     user_id && cal()
+      refetchRoomForUser()
   }, [refetchRoomForUser])
 
   useEffect(() => {
+    //console.log(user_id)
+    //console.log(room);
     if (!room.fetching && room.data?.rooms[0]?.id) {
       setRoomId(room.data?.rooms[0]?.id)
       setIsRoomPresent(true)
     }
   }, [room])
 
-  console.log({ roomId, isRoomPresent })
+  //console.log({ roomId, isRoomPresent })
+  //console.log(process)
 
   return (
     <div>
       {/* TODO: set padding to 36px for large screen */}
       <div className={`${styles['message-detail-container']}`}>
         <div>
-          <ChatHeader online={userIsOnline} />
+        {userID && <ChatHeader userID={userID} online={userIsOnline} />}
         </div>
 
         <div className={`${styles['message-detail']}`}>
@@ -98,11 +182,12 @@ const MessageDetail = () => {
               setRoomId={setRoomId}
               isRoomPresent={isRoomPresent}
               setIsRoomPresent={setIsRoomPresent}
+              msg={msg}
             />
           )}
 
           <div className={`${styles['chat-profile-container']}`}>
-            <ChatProfile online={userIsOnline} />
+           {userID && <ChatProfile userID={userID} online={userIsOnline} />}
           </div>
         </div>
       </div>

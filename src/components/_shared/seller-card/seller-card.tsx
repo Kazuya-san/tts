@@ -15,6 +15,8 @@ import type {
 import { useUser } from '../../../utils/user/user-context'
 import Link from '../link/link'
 import styles from './seller-card.module.scss'
+import { useRouter } from 'next/router'
+
 
 export type SellerCardProps = {
   user: Pick<
@@ -50,13 +52,18 @@ const ChipStyle = styled(Chip)(({ theme }) => ({
 }))
 
 function SellerCard({ user, prices }: SellerCardProps) {
+  const router = useRouter()
   const { user: me } = useUser()
+  const { seller_id } = router.query
+  //console.log(router.query)
+
+  //console.log(user)
   
   return (
     <>
       <div className={styles.sellerCard__upper_section}>
         <div className={styles.sellerCard__imageHolder}>
-          <NextLink href={`/seller/${user.id}`} passHref>
+          <NextLink href={`/seller/${seller_id}`} passHref>
             <Image
               alt={`${user.full_name}'s Avatar`}
               src={
@@ -81,7 +88,7 @@ function SellerCard({ user, prices }: SellerCardProps) {
                   variant="h4"
                   component="h1"
                 >
-                  <Link href={`/seller/${user.id}`} variant="h5">
+                  <Link href={`/seller/${seller_id}`} variant="h5">
                     {user.full_name}
                   </Link>
                 </Typography>
@@ -169,7 +176,7 @@ function SellerCard({ user, prices }: SellerCardProps) {
 
               <div className={styles.sellerCard_msgbtn}>
                 {!me || me.id !== user.id ? (
-                  <NextLink href={`/message/${user.id}`} passHref>
+                  <NextLink href={`/message/${seller_id}`} passHref>
                     <Button variant="outlined">Message</Button>
                   </NextLink>
                 ) : null}

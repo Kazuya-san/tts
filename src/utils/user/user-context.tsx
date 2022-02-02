@@ -115,7 +115,7 @@ function useUpdateLastSeen(userId?: number) {
       }
 
       updateLastSeen({ id: userId })
-    }, 60000)
+    }, 1000 * 60 * 5)
 
     return () => {
       clearInterval(interval)

@@ -10,11 +10,12 @@ type ChatProfileType = {
 const ChatProfile = ({ value }: ChatProfileType) => {
   const router = useRouter()
 
+  //console.log(value)
   return (
     <div
       className={`${styles['profile-container']}`}
       onClick={function () {
-        if (value.user.id) router.push(`/message/${value.user.id}`)
+        if (value.user.alt_id) router.push(`/message/${value.user.alt_id}`)
         return undefined
       }}
     >

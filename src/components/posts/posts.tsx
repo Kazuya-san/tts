@@ -14,7 +14,6 @@ import type { PostCardProps } from '../_shared/post-card/post-card'
 import PostCard from '../_shared/post-card/post-card'
 import PostsFilters from './posts-filters'
 import styles from './posts.module.scss'
-
 //@ts-ignore
 // import flatten from 'flat'
 
@@ -131,7 +130,6 @@ const useStyles = makeStyles({
 function Posts(props: PostsProps) {
   const router = useRouter()
   const { zipAndCity } = useCity()
-
   const classes = useStyles()
 
   const sortNullishValues = (arr: any = []) => {
@@ -181,6 +179,7 @@ function Posts(props: PostsProps) {
   if (!props.city_alt_id || !zipAndCity) {
     return null
   }
+
 
   return (
     <>
@@ -235,10 +234,11 @@ function Posts(props: PostsProps) {
                       md={6}
                       lg={6}
                       xl={6}
+                      key={post.id}
                       className={clsx(`${classes['grid-md-5']}`, `${classes['item']}`)}
                     >
                       <React.Fragment key={post.id}>
-                        <PostCard mode="MINI" post={post} pageName="post-list" />
+                        <PostCard mode="MINI"  post={post} pageName="post-list" />
                       </React.Fragment>
                     </Grid>
                   ))}
@@ -293,7 +293,7 @@ function Posts(props: PostsProps) {
           ) : (
             <Grid container spacing={10}>
               {filteredResults.map((post) => (
-                <Grid item xs={12} sm={12} md={12} lg={6} xl={6}>
+                <Grid key={post.id} item xs={12} sm={12} md={12} lg={6} xl={6}>
                   <React.Fragment key={post.id}>
                     <PostCard mode="MINI" post={post} pageName="post-list" />
                   </React.Fragment>
